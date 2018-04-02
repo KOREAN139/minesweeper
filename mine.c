@@ -1,92 +1,76 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<unistd.h>
-#include<sys/ioctl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <ncurses.h>
 
-int _W, _H;
-
-int getScreenSize()
+int main()
 {
-  int resized = 0;
-  struct winsize w;
+  int _W, _H, i, j, c, pos = 0;
+  char *title = "M I N E S W E E P E R";
+  char *difficulty[] = {
+    "E A S Y ( 9 X 9, 1 6 M I N E S )",
+    "M E D I U M ( 1 6 X 1 6, 4 0 M I N E S )",
+    "H A R D ( 3 0 X 1 6, 9 9 M I N E S )",
+    "C U S T O M"
+  };  
 
-  ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+  /* Start curse mode */
+  initscr();
+  cbreak();
+  noecho();
+  keypad(stdscr, TRUE);
 
-  /* If window were resized, get current window size. */
-  if(_W != w.ws_col || _H != w.ws_row) {
-    _W = w.ws_col;
-    _H = w.ws_row;
-    resized = 1;
+  /* Set cursor invisible */
+  curs_set(0);
+
+  /*
+  printw("Upper left corner           "); addch(ACS_ULCORNER); printw("\n");
+  printw("Lower left corner           "); addch(ACS_LLCORNER); printw("\n");
+  printw("Upper right corner          "); addch(ACS_URCORNER); printw("\n");
+  printw("Lower right corner          "); addch(ACS_LRCORNER); printw("\n");
+  */
+
+  /* Get current screen's width and height */
+  getmaxyx(stdscr, _H, _W);
+
+  /* Print title */
+  for(i = 0; title[i]; i++){
+    mvprintw(_H/2 - 5, _W/2 - 10 + i, "%c", title[i]);
+    usleep(40000);
+    refresh();
   }
 
-  return resized;
-}
-
-int drawStartScreen (int *width, int *height)
-{
-  int _width, _height, i;
-  char in[4], *p;
-  
-  system("clear");
-
-  for(i = 0; i < _H/2 - 3; i++) puts("");
-
-  for(i = 0; i < _W/2 - 11; i++) printf(" ");
-  puts("Set your board size\n");
-  
-  /* Get board's width. */
-  for(i = 0; i < _W/2 - 6; i++) printf(" ");
-  printf("width: ");
-  scanf("%s", in);
-  puts("");
-
-  /* Check whether input is correct or not. */
-  for(p = in; *p; _width = _width*10 + *p++ - '0')
-    if(*p < '0' || *p > '9')
-      goto err;
-
-  /* Get board's width. */
-  for(i = 0; i < _W/2 - 7; i++) printf(" ");
-  printf("height: ");
-  scanf("%s", in);
-  puts("");
-
-  /* Check whether input is correct or not. */
-  for(p = in; *p; _height = _height*10 + *p++ - '0')
-    if(*p < '0' || *p > '9')
-      goto err;
-
-  *width = _width;
-  *height = _height;
-
-  return 0;
-
-err:
-
-  /* When improper input was given. */
-  for(i = 0; i < _W/2 - 8; i++) printf(" ");
-  puts("Improper input");
-  for(i = 0; i < _W/2 - 13; i++) printf(" ");
-  puts("Press any key to restart");
-
-  getchar();
-  getchar();
-
-  return 1;
-}
-
-int main(){
-  int _W, _H;
-  int width, height, i;
-
-  while(1){
-    // start screen
-    getScreenSize();
-    if(drawStartScreen(&width, &height))
-      continue;
-
-    // draw board
-    scanf("%d", &_W);
+  /* Blink title, unnecessary but it looks cool tho `,:) */
+  for(i = 0; i < 3; i++){
+    usleep(200000);
+    clear();
+    refresh();
+    usleep(200000);
+    mvprintw(_H/2 - 5, _W/2 - 10, "%s", title);
+    refresh();
   }
+
+
+  /* Print difficulties */
+  for(i = 0; i < 4; i++){
+    usleep(200000);
+    mvprintw(_H/2 - 3 + i*2, _W/2 - 10, "%s", difficulty[i]);
+    refresh();
+  }
+  mvprintw(_H/2 - 3 + pos*2, _W/2 - 12, ">");
+  refresh();
+
+  /* Get key-input selection */
+  while((c = getch()) != '\n'){
+    if(c == KEY_UP || c == KEY_DOWN){
+      mvprintw(_H/2 - 3 + pos*2, _W/2 - 12, " ");
+      pos = pos + (c == KEY_UP ? -1 : 1) & 3;
+    }
+    
+    mvprintw(_H/2 - 3 + pos*2, _W/2 - 12, ">");
+    refresh();
+  }
+
+  endwin();
   return 0;
 }
